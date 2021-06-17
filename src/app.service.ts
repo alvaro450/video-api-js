@@ -9,10 +9,6 @@ const VIDEO_PATH = `${process.cwd()}/videos`;
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
-  }
-
   async getThumbnailFromVideo(url: string) {
     const decodedUrl = this._decodeValue(url);
     const timestamp = Date.now();
@@ -21,11 +17,12 @@ export class AppService {
     // download the video to local system
     await this._downloadVideoFile(decodedUrl, videoFullFileName);
     // get thumbnail from
-    return this._getThumbnailFromVideo(
+    const base64Thumbnail = await this._getThumbnailFromVideo(
       decodedUrl,
       videoFullFileName,
       thumbnailFileName,
     );
+    return base64Thumbnail;
   }
 
   /**
@@ -57,16 +54,25 @@ export class AppService {
     return decodeURIComponent(value);
   }
 
+  /**
+   * @description create the thumbnail from local video file, and return it as a base64 encoded image
+   * @param url
+   * @param videoFullFileName
+   * @param thumbnailFileName
+   * @returns
+   */
   private async _getThumbnailFromVideo(
     url: string,
     videoFullFileName: string,
     thumbnailFileName: string,
-  ): Promise<string> {
+  ): Promise<{ imageText: string }> {
     return new Promise(async (resolve, reject) => {
       try {
+        // ffmpeg has to be installed in the OS
+        // using ffmpeg to process the video
         const video = await new ffmpeg(videoFullFileName);
 
-        // place the thumbnail in the temp folder
+        // place the thumbnail in the thumbnails folder, just do one frame capture
         video.fnExtractFrameToJPG(
           THUMBNAIL_PATH,
           {
@@ -79,25 +85,19 @@ export class AppService {
               return reject(error);
             }
 
-            console.log('FILES', files);
-            // read it into memory
-            const base64Image = await fs.readFile(
-              join(THUMBNAIL_PATH, `${thumbnailFileName}`),
-              {
-                encoding: 'base64',
-              },
-            );
+            // read the created thumbnail into memory as base64
+            const base64Image = await fs.readFile(files[0], {
+              encoding: 'base64',
+            });
 
-            // pass the inmemory image to be returned to the client
-            resolve(base64Image);
+            // pass the in-memory image to be returned to the client
+            resolve({ imageText: `data:image/jpeg;base64, ${base64Image}` });
           },
         );
       } catch (error) {
         console.error(`Unable to process video from url: ${url}`, error);
         reject(error);
       }
-
-      resolve(null);
     });
   }
 }

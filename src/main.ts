@@ -16,6 +16,12 @@ async function bootstrap() {
   SwaggerModule.setup('swagger', app, document);
   // enable compression
   app.use(compression());
+  app.enableCors({
+    origin: 'http://localhost:4200',
+    methods: ['GET', 'POST', 'PUT'],
+    credentials: true,
+    maxAge: 99999,
+  });
 
   await app.listen(3000);
 }
