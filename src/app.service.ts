@@ -12,11 +12,12 @@ export class AppService {
   async getThumbnailFromVideo(url: string) {
     const decodedUrl = this._decodeValue(url);
     const timestamp = Date.now();
+    // file names to be used to persist files to disk
     const thumbnailFileName = `thumbnail-${timestamp}.jpeg`;
     const videoFullFileName = join(VIDEO_PATH, `video-${timestamp}.mp4`);
     // download the video to local system
     await this._downloadVideoFile(decodedUrl, videoFullFileName);
-    // get thumbnail from
+    // get thumbnail from video on disk
     const base64Thumbnail = await this._getThumbnailFromVideo(
       decodedUrl,
       videoFullFileName,
@@ -37,6 +38,7 @@ export class AppService {
       const buffer = await fileResponse.buffer();
       return new Promise(async (resolve, reject) => {
         try {
+          // write the video to disk
           await fs.writeFile(videoFullFileName, buffer);
           resolve(null);
         } catch (e) {
@@ -86,7 +88,7 @@ export class AppService {
             }
 
             // read the created thumbnail into memory as base64
-            const base64Image = await fs.readFile(files[0], {
+            const base64Image = await fs.readFile(files[files.length - 1], {
               encoding: 'base64',
             });
 
